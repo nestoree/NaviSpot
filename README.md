@@ -13,11 +13,11 @@
 * **Reproductor Completo:** Controles de reproducción, barra de progreso, volumen logarítmico y modo aleatorio/repetir.
 
 ## 🚀 Próximamente (Roadmap)
-- [ ] 🔍 Barra de búsqueda funcional.
-- [ ] 📜 Gestión de Playlists.
-- [ ] 📄 Visualización de letras de canciones.
-- [ ] ⬇️ Descarga de pistas para reproducción offline.
-- [ ] 🌓 Soporte para temas personalizados.
+- 🔍 Barra de búsqueda funcional.
+- 📜 Gestión de Playlists.
+- 📄 Visualización de letras de canciones.
+- ⬇️ Descarga de pistas para reproducción offline.
+- 🌓 Soporte para temas personalizados.
 
 ---
 
