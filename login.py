@@ -34,13 +34,21 @@ class LoginFrame(ctk.CTkFrame):
             "user": self.user_entry.get(),
             "pass": self.pass_entry.get()
         }
+        persisted = {}
+        if os.path.exists(CONFIG_FILE):
+            try:
+                with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                    persisted = json.load(f)
+            except Exception:
+                persisted = {}
+        persisted.update(config)
         test_api = NavidromeAPI(config)
         try:
             r = requests.get(test_api.get_url("ping.view"), timeout=5).json()
             if r['subsonic-response']['status'] == 'ok':
-                with open(CONFIG_FILE, "w") as f:
-                    json.dump(config, f)
-                self.on_login_success(config)
+                with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+                    json.dump(persisted, f, indent=2, ensure_ascii=False)
+                self.on_login_success(persisted)
             else:
                 self.error_lbl.configure(text="Credenciales incorrectas")
         except:
