@@ -1,6 +1,7 @@
 import hashlib
 import random
 import requests
+from urllib.parse import quote
 
 class NavidromeAPI:
     def __init__(self, config):
@@ -16,16 +17,36 @@ class NavidromeAPI:
     def get_url(self, endpoint, params=""):
         return f"{self.base_url}/rest/{endpoint}?{self.get_auth()}{params}"
 
-    def get_albums(self, size=40):
+    def get_albums(self, size=40, type="random"):
         try:
-            r = requests.get(self.get_url("getAlbumList.view", f"&type=random&size={size}"), timeout=10)
+            # Ahora usamos el parámetro 'type' en la URL
+            url = self.get_url("getAlbumList2.view", f"&type={type}&size={size}")
+            r = requests.get(url, timeout=10)
             data = r.json()
-            # Navidrome a veces devuelve el objeto vacío si no hay conexión
-            if 'subsonic-response' in data and 'albumList' in data['subsonic-response']:
-                return data['subsonic-response']['albumList']['album']
+            
+            if 'subsonic-response' in data and 'albumList2' in data['subsonic-response']:
+                # Si no hay álbumes de ese tipo, 'album' no existirá en la respuesta
+                return data['subsonic-response']['albumList2'].get('album', [])
             return []
         except Exception as e:
-            print(f"Error cargando álbumes: {e}")
+            print(f"Error cargando álbumes ({type}): {e}")
+            return []
+
+    def search_albums(self, query, size=40):
+        if not query:
+            return []
+        try:
+            encoded = quote(query)
+            url = self.get_url("search2.view", f"&query={encoded}&albumCount={size}")
+            r = requests.get(url, timeout=10)
+            data = r.json()
+            search_result = data['subsonic-response'].get('searchResult2', {})
+            albums = search_result.get('album', [])
+            if isinstance(albums, dict):
+                return [albums]
+            return albums or []
+        except Exception as e:
+            print(f"Error buscando álbumes: {e}")
             return []
     
     def get_artist_albums(self, artist_id):
@@ -43,6 +64,16 @@ class NavidromeAPI:
             # Navidrome usa el mismo endpoint de CoverArt para los artistas usando su ID
             return self.get_url("getArtistInfo.view", f"&id={artist_id}&size={size}")
 
+    def get_top_songs(self, size=5):
+        # 'frequent' devuelve lo más escuchado en la API de Subsonic
+        return self._make_request("getAlbumList2.view", f"&type=frequent&size={size}")
+
+    def get_top_artists(self, size=5):
+        # Obtenemos artistas y los ordenamos por importancia o frecuencia si el servidor lo soporta
+        # Nota: Algunos servidores requieren lógica extra, pero 'getTopSongs' es el estándar
+        res = self._make_request("getTopSongs.view", f"&count={size}")
+        return res if res else []
+
     def get_artists(self):
             try:
                 r = requests.get(self.get_url("getArtists.view"), timeout=10)
@@ -54,11 +85,16 @@ class NavidromeAPI:
                 return []
             
     # ESTA ES LA FUNCIÓN QUE FALTABA:
-    def get_album_tracks(self, album_id):
+    def get_tracks(self, album_id):
         try:
+            # Usamos getAlbum.view para obtener los detalles de un álbum y sus canciones
             r = requests.get(self.get_url("getAlbum.view", f"&id={album_id}"), timeout=10)
             data = r.json()
-            return data['subsonic-response']['album']['song']
+            
+            if 'subsonic-response' in data and 'album' in data['subsonic-response']:
+                # Navidrome devuelve las canciones dentro de una lista llamada 'song'
+                return data['subsonic-response']['album'].get('song', [])
+            return []
         except Exception as e:
             print(f"Error cargando canciones del álbum: {e}")
             return []
